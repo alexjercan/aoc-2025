@@ -42,7 +42,7 @@
 
             buildPhase = ''
               mkdir -p dist
-              clang src/day${dayString}.c -o dist/day${dayString}
+              clang -I. src/day${dayString}.c -o dist/day${dayString}
             '';
 
             installPhase = ''
