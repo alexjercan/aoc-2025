@@ -42,7 +42,7 @@
 
             buildPhase = ''
               mkdir -p dist
-              clang -I. src/day${dayString}.c -o dist/day${dayString}
+              clang -I. -lm src/day${dayString}.c -o dist/day${dayString}
             '';
 
             installPhase = ''
@@ -76,6 +76,7 @@
               name = "aoc2025";
               runtimeInputs = [
                 self'.packages."${aocPrefix}01"
+                self'.packages."${aocPrefix}02"
               ];
               text =
                 /*
@@ -88,7 +89,7 @@
                   Color_Off='\033[0m'
 
                   IRed='\033[0;91m'
-                  # IGreen='\033[0;92m'
+                  IGreen='\033[0;92m'
                   # IYellow='\033[0;93m'
 
                   BIGreen='\033[1;92m'
@@ -109,8 +110,11 @@
                       ^^^[_]^^^
                   "
 
-                  echo -e "$IRed""--- Day 1: ---""$Color_Off"
+                  echo -e "$IRed""--- Day 1: Secret Entrance ---""$Color_Off"
                   ${aocPrefix}01 < ./input/day01.input
+
+                  echo -e "$IGreen""--- Day 2: Gift Shop ---""$Color_Off"
+                  ${aocPrefix}02 < ./input/day02.input
                 '';
             };
             aoc2025-get = pkgs.writeShellApplication {
