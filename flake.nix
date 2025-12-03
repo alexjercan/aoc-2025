@@ -77,6 +77,7 @@
               runtimeInputs = [
                 self'.packages."${aocPrefix}01"
                 self'.packages."${aocPrefix}02"
+                self'.packages."${aocPrefix}03"
               ];
               text =
                 /*
@@ -90,7 +91,7 @@
 
                   IRed='\033[0;91m'
                   IGreen='\033[0;92m'
-                  # IYellow='\033[0;93m'
+                  IYellow='\033[0;93m'
 
                   BIGreen='\033[1;92m'
 
@@ -115,6 +116,9 @@
 
                   echo -e "$IGreen""--- Day 2: Gift Shop ---""$Color_Off"
                   ${aocPrefix}02 < ./input/day02.input
+
+                  echo -e "$IYellow""--- Day 3: Lobby ---""$Color_Off"
+                  ${aocPrefix}03 < ./input/day03.input
                 '';
             };
             aoc2025-get = pkgs.writeShellApplication {
