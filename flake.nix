@@ -80,6 +80,7 @@
                 self'.packages."${aocPrefix}03"
                 self'.packages."${aocPrefix}04"
                 self'.packages."${aocPrefix}05"
+                self'.packages."${aocPrefix}06"
               ];
               text =
                 /*
@@ -127,6 +128,9 @@
 
                   echo -e "$IGreen""--- Day 5: Cafeteria ---""$Color_Off"
                   ${aocPrefix}05 < ./input/day05.input
+
+                  echo -e "$IYellow""--- Day 6: Trash Compactor ---""$Color_Off"
+                  ${aocPrefix}06 < ./input/day06.input
                 '';
             };
             aoc2025-get = pkgs.writeShellApplication {
@@ -200,6 +204,7 @@
         devShells.default = pkgs.mkShell {
           packages = [
             pkgs.clang
+            pkgs.valgrind
           ];
         };
       };
