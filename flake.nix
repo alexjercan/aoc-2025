@@ -82,6 +82,7 @@
                 self'.packages."${aocPrefix}05"
                 self'.packages."${aocPrefix}06"
                 self'.packages."${aocPrefix}07"
+                self'.packages."${aocPrefix}08"
               ];
               text =
                 /*
@@ -135,6 +136,9 @@
 
                   echo -e "$IRed""--- Day 7: Laboratories ---""$Color_Off"
                   ${aocPrefix}07 < ./input/day07.input
+
+                  echo -e "$IGreen""--- Day 8: Playground ---""$Color_Off"
+                  ${aocPrefix}08 < ./input/day08.input
                 '';
             };
             aoc2025-get = pkgs.writeShellApplication {
