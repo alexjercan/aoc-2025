@@ -93,7 +93,7 @@ size_t parse_input(Aids_String_Slice buffer, Problem *problems) {
             } else if (isdigit(*column_text.str)) {
                 long number = 0;
                 aids_string_slice_atol(&column_text, &number, 10);
-                AIDS_ASSERT(aids_array_append(&problems[col_idx].numbers, (const unsigned char *)&number) == AIDS_OK, aids_failure_reason());
+                AIDS_ASSERT(aids_array_append(&problems[col_idx].numbers, &number) == AIDS_OK, aids_failure_reason());
             }
         }
     }
@@ -109,12 +109,12 @@ long part(Problem *problems, size_t count) {
         if (problem.numbers.count == 0) continue;
 
         long *number = NULL;
-        AIDS_ASSERT(aids_array_get(&problem.numbers, 0, (unsigned char**)&number) == AIDS_OK, aids_failure_reason());
+        AIDS_ASSERT(aids_array_get(&problem.numbers, 0, (void **)&number) == AIDS_OK, aids_failure_reason());
         long result = *number;
 
         for (size_t j = 1; j < problem.numbers.count; j++) {
             long *number = NULL;
-            AIDS_ASSERT(aids_array_get(&problem.numbers, j, (unsigned char**)&number) == AIDS_OK, aids_failure_reason());
+            AIDS_ASSERT(aids_array_get(&problem.numbers, j, (void **)&number) == AIDS_OK, aids_failure_reason());
 
             if (problem.op == '*') {
                 result *= *number;

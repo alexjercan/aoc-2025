@@ -36,7 +36,7 @@ void parse_input(Aids_String_Slice buffer, Aids_Array *points) {
         aids_string_slice_trim(&token);
         AIDS_ASSERT(aids_string_slice_atol(&token, &point.z, 10), "Expected a number.");
 
-        AIDS_ASSERT(aids_array_append(points, (const unsigned char *)&point) == AIDS_OK, aids_failure_reason());
+        AIDS_ASSERT(aids_array_append(points, &point) == AIDS_OK, aids_failure_reason());
     }
 
 }
@@ -62,11 +62,11 @@ void part1(Aids_Array points) {
         long best_distance = LONG_MAX;
         for (size_t i = 0; i < points.count; i++) {
             IVec3 *point = NULL;
-            AIDS_ASSERT(aids_array_get(&points, i, (unsigned char**)&point) == AIDS_OK, aids_failure_reason());
+            AIDS_ASSERT(aids_array_get(&points, i, (void **)&point) == AIDS_OK, aids_failure_reason());
 
             for (size_t j = i + 1; j < points.count; j++) {
                 IVec3 *other = NULL;
-                AIDS_ASSERT(aids_array_get(&points, j, (unsigned char**)&other) == AIDS_OK, aids_failure_reason());
+                AIDS_ASSERT(aids_array_get(&points, j, (void **)&other) == AIDS_OK, aids_failure_reason());
 
                 long distance = ivec3_distance_squared(*point, *other);
                 if (distance <= best_distance && visited[i * points.count + j] == 0) {
@@ -126,11 +126,11 @@ void part2(Aids_Array points) {
         long best_distance = LONG_MAX;
         for (size_t i = 0; i < points.count; i++) {
             IVec3 *point = NULL;
-            AIDS_ASSERT(aids_array_get(&points, i, (unsigned char**)&point) == AIDS_OK, aids_failure_reason());
+            AIDS_ASSERT(aids_array_get(&points, i, (void **)&point) == AIDS_OK, aids_failure_reason());
 
             for (size_t j = i + 1; j < points.count; j++) {
                 IVec3 *other = NULL;
-                AIDS_ASSERT(aids_array_get(&points, j, (unsigned char**)&other) == AIDS_OK, aids_failure_reason());
+                AIDS_ASSERT(aids_array_get(&points, j, (void **)&other) == AIDS_OK, aids_failure_reason());
 
                 long distance = ivec3_distance_squared(*point, *other);
                 if (distance <= best_distance && visited[i * points.count + j] == 0) {
@@ -169,9 +169,9 @@ void part2(Aids_Array points) {
 
         if (cluster_count == 1) {
             IVec3 *point_a = NULL;
-            AIDS_ASSERT(aids_array_get(&points, best_i, (unsigned char**)&point_a) == AIDS_OK, aids_failure_reason());
+            AIDS_ASSERT(aids_array_get(&points, best_i, (void **)&point_a) == AIDS_OK, aids_failure_reason());
             IVec3 *point_b = NULL;
-            AIDS_ASSERT(aids_array_get(&points, best_j, (unsigned char**)&point_b) == AIDS_OK, aids_failure_reason());
+            AIDS_ASSERT(aids_array_get(&points, best_j, (void **)&point_b) == AIDS_OK, aids_failure_reason());
 
             printf("PART2: %zu\n", point_a->x * point_b->x);
             break;

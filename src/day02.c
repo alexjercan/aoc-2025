@@ -21,7 +21,7 @@ void parse_input(Aids_String_Slice buffer, Aids_Array *ranges) {
         AIDS_ASSERT(aids_string_slice_atol(&token, &end, 10), "Expected a number");
 
         Range range = {start, end};
-        AIDS_ASSERT(aids_array_append(ranges, (const unsigned char *)range) == AIDS_OK, aids_failure_reason());
+        AIDS_ASSERT(aids_array_append(ranges, range) == AIDS_OK, aids_failure_reason());
     }
 
 }
@@ -45,7 +45,7 @@ void part1(Aids_Array ranges) {
 
     for (size_t i = 0; i < ranges.count; i++) {
         Range *range = NULL;
-        AIDS_ASSERT(aids_array_get(&ranges, i, (unsigned char**)&range) == AIDS_OK, aids_failure_reason());
+        AIDS_ASSERT(aids_array_get(&ranges, i, (void **)&range) == AIDS_OK, aids_failure_reason());
 
         long start = (*range)[0];
         long end = (*range)[1];
@@ -98,7 +98,7 @@ void part2(Aids_Array ranges) {
 
     for (size_t i = 0; i < ranges.count; i++) {
         Range *range = NULL;
-        AIDS_ASSERT(aids_array_get(&ranges, i, (unsigned char**)&range) == AIDS_OK, aids_failure_reason());
+        AIDS_ASSERT(aids_array_get(&ranges, i, (void **)&range) == AIDS_OK, aids_failure_reason());
 
         long start = (*range)[0];
         long end = (*range)[1];

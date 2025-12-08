@@ -125,9 +125,10 @@ typedef struct {
 } Aids_Array;
 
 AIDSHDEF void aids_array_init(Aids_Array *da, unsigned long item_size);
-AIDSHDEF Aids_Result aids_array_append(Aids_Array *da, const unsigned char *item);
-AIDSHDEF Aids_Result aids_array_append_many(Aids_Array *da, const unsigned char *items, unsigned long count);
-AIDSHDEF Aids_Result aids_array_get(const Aids_Array *da, unsigned long index, unsigned char **item);
+AIDSHDEF Aids_Result aids_array_append(Aids_Array *da, const void *item);
+AIDSHDEF Aids_Result aids_array_append_many(Aids_Array *da, const void *items, unsigned long count);
+AIDSHDEF Aids_Result aids_array_get(const Aids_Array *da, unsigned long index, void **item);
+AIDSHDEF Aids_Result aids_array_pop(const Aids_Array *da, unsigned long index, void *item);
 AIDSHDEF void aids_array_sort(Aids_Array *da, int (*compare)(const void *, const void *));
 AIDSHDEF void aids_array_free(Aids_Array *da);
 
@@ -268,7 +269,7 @@ AIDSHDEF void aids_array_init(Aids_Array *da, unsigned long item_size) {
     da->capacity = 0;
 }
 
-AIDSHDEF Aids_Result aids_array_append(Aids_Array *da, const unsigned char *item) {
+AIDSHDEF Aids_Result aids_array_append(Aids_Array *da, const void *item) {
     Aids_Result result = AIDS_OK;
 
     if (da->count >= da->capacity) {
@@ -294,7 +295,7 @@ defer:
     return result;
 }
 
-AIDSHDEF Aids_Result aids_array_append_many(Aids_Array *da, const unsigned char *items, unsigned long count) {
+AIDSHDEF Aids_Result aids_array_append_many(Aids_Array *da, const void *items, unsigned long count) {
     Aids_Result result = AIDS_OK;
 
     if (da->count + count > da->capacity) {
@@ -324,7 +325,7 @@ defer:
     return result;
 }
 
-AIDSHDEF Aids_Result aids_array_get(const Aids_Array *da, unsigned long index, unsigned char **item) {
+AIDSHDEF Aids_Result aids_array_get(const Aids_Array *da, unsigned long index, void **item) {
     Aids_Result result = AIDS_OK;
 
     if (index >= da->count) {
@@ -333,6 +334,26 @@ AIDSHDEF Aids_Result aids_array_get(const Aids_Array *da, unsigned long index, u
     }
 
     *item = da->items + index * da->item_size;
+
+defer:
+    return result;
+}
+
+AIDSHDEF Aids_Result aids_array_pop(const Aids_Array *da, unsigned long index, void *item) {
+    Aids_Result result = AIDS_OK;
+
+    if (index >= da->count) {
+        aids__g_failure_reason = aids_temp_sprintf("Index %lu out of bounds (count: %lu)", index, da->count);
+        return_defer(AIDS_ERR);
+    }
+
+    memcpy(item, da->items + index * da->item_size, da->item_size);
+    if (index < da->count - 1) {
+        memcpy(da->items + index * da->item_size,
+               da->items + (index + 1) * da->item_size,
+               (da->count - index - 1) * da->item_size);
+    }
+    da->count--;
 
 defer:
     return result;
@@ -719,6 +740,7 @@ AIDSHDEF Aids_Result aids_io_basename(const Aids_String_Slice *filepath, Aids_St
 #       define array_append aids_array_append
 #       define array_append_many aids_array_append_many
 #       define array_get aids_array_get
+#       define array_pop aids_array_pop
 #       define array_sort aids_array_sort
 #       define array_free aids_array_free
 

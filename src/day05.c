@@ -26,14 +26,14 @@ void parse_input(Aids_String_Slice buffer, Aids_Array *ranges, Aids_Array *items
         AIDS_ASSERT(aids_string_slice_atol(&line, &end, 10), "Expected a number");
 
         Range range = {start, end};
-        AIDS_ASSERT(aids_array_append(ranges, (const unsigned char *)range) == AIDS_OK, aids_failure_reason());
+        AIDS_ASSERT(aids_array_append(ranges, range) == AIDS_OK, aids_failure_reason());
     }
 
     while (aids_string_slice_tokenize(&buffer, '\n', &line)) {
         long item = 0;
         AIDS_ASSERT(aids_string_slice_atol(&line, &item, 10), "Expected a number");
 
-        AIDS_ASSERT(aids_array_append(items, (const unsigned char *)&item) == AIDS_OK, aids_failure_reason());
+        AIDS_ASSERT(aids_array_append(items, &item) == AIDS_OK, aids_failure_reason());
     }
 }
 
@@ -44,7 +44,7 @@ boolean is_in_range(Range range, long item) {
 boolean is_in_any_range(Aids_Array ranges, long item) {
     for (size_t i = 0; i < ranges.count; i++) {
         Range *range = NULL;
-        AIDS_ASSERT(aids_array_get(&ranges, i, (unsigned char**)&range) == AIDS_OK, aids_failure_reason());
+        AIDS_ASSERT(aids_array_get(&ranges, i, (void **)&range) == AIDS_OK, aids_failure_reason());
 
         if (is_in_range(*range, item)) {
             return true;
@@ -59,7 +59,7 @@ void part1(Aids_Array ranges, Aids_Array items) {
 
     for (size_t i = 0; i < items.count; i++) {
         long *item = NULL;
-        AIDS_ASSERT(aids_array_get(&items, i, (unsigned char**)&item) == AIDS_OK, aids_failure_reason());
+        AIDS_ASSERT(aids_array_get(&items, i, (void **)&item) == AIDS_OK, aids_failure_reason());
 
         if (is_in_any_range(ranges, *item)) {
             count += 1;
@@ -85,7 +85,7 @@ void part2(Aids_Array ranges) {
     long start = -1;
     for (size_t i = 0; i < ranges.count; i++) {
         Range *range = NULL;
-        AIDS_ASSERT(aids_array_get(&ranges, i, (unsigned char**)&range) == AIDS_OK, aids_failure_reason());
+        AIDS_ASSERT(aids_array_get(&ranges, i, (void **)&range) == AIDS_OK, aids_failure_reason());
 
         if (start < (*range)[0]) start = (*range)[0];
         if (start <= (*range)[1]) {

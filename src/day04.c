@@ -8,7 +8,7 @@ void parse_input(Aids_String_Slice buffer, Aids_Array *lines) {
 
     Aids_String_Slice token = {0};
     while (aids_string_slice_tokenize(&buffer, '\n', &token)) {
-        AIDS_ASSERT(aids_array_append(lines, (const unsigned char *)&token) == AIDS_OK, aids_failure_reason());
+        AIDS_ASSERT(aids_array_append(lines, &token) == AIDS_OK, aids_failure_reason());
     }
 }
 
@@ -32,7 +32,7 @@ size_t neighbors(Aids_Array lines, size_t row, size_t col) {
         if (row_i < 0 || row_i >= lines.count) continue;
 
         Aids_String_Slice *line = NULL;
-        AIDS_ASSERT(aids_array_get(&lines, row_i, (unsigned char **)&line) == AIDS_OK, aids_failure_reason());
+        AIDS_ASSERT(aids_array_get(&lines, row_i, (void **)&line) == AIDS_OK, aids_failure_reason());
         if (col_i < 0 || col_i >= line->len) continue;
 
         boolean is_paper = line->str[col_i] == '@';
@@ -47,7 +47,7 @@ void part1(Aids_Array lines) {
 
     for (size_t row = 0; row < lines.count; row++) {
         Aids_String_Slice *line = NULL;
-        AIDS_ASSERT(aids_array_get(&lines, row, (unsigned char **)&line) == AIDS_OK, aids_failure_reason());
+        AIDS_ASSERT(aids_array_get(&lines, row, (void **)&line) == AIDS_OK, aids_failure_reason());
 
         for (size_t col = 0; col < line->len; col++) {
             if (line->str[col] == '@') {
@@ -68,7 +68,7 @@ void part2(Aids_Array lines) {
 
         for (size_t row = 0; row < lines.count; row++) {
             Aids_String_Slice *line = NULL;
-            AIDS_ASSERT(aids_array_get(&lines, row, (unsigned char **)&line) == AIDS_OK, aids_failure_reason());
+            AIDS_ASSERT(aids_array_get(&lines, row, (void **)&line) == AIDS_OK, aids_failure_reason());
 
             for (size_t col = 0; col < line->len; col++) {
                 if (line->str[col] == '@') {
