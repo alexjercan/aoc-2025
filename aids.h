@@ -128,9 +128,22 @@ AIDSHDEF void aids_array_init(Aids_Array *da, unsigned long item_size);
 AIDSHDEF Aids_Result aids_array_append(Aids_Array *da, const void *item);
 AIDSHDEF Aids_Result aids_array_append_many(Aids_Array *da, const void *items, unsigned long count);
 AIDSHDEF Aids_Result aids_array_get(const Aids_Array *da, unsigned long index, void **item);
-AIDSHDEF Aids_Result aids_array_pop(const Aids_Array *da, unsigned long index, void *item);
+AIDSHDEF boolean aids_array_contains(const Aids_Array *da, const void *item, int (*compare)(const void *, const void *));
+AIDSHDEF Aids_Result aids_array_pop(Aids_Array *da, unsigned long index, void *item);
+AIDSHDEF Aids_Result aids_array_swap(const Aids_Array *da, unsigned long index1, unsigned long index2);
 AIDSHDEF void aids_array_sort(Aids_Array *da, int (*compare)(const void *, const void *));
 AIDSHDEF void aids_array_free(Aids_Array *da);
+
+typedef struct {
+    Aids_Array items;
+    int (*compare)(const void *, const void *);
+} Aids_Priority_Queue;
+
+AIDSHDEF void aids_priority_queue_init(Aids_Priority_Queue *pq, unsigned long item_size, int (*compare)(const void *, const void *));
+AIDSHDEF Aids_Result aids_priority_queue_insert(Aids_Priority_Queue *pq, const void *item);
+AIDSHDEF Aids_Result aids_priority_queue_pull(Aids_Priority_Queue *pq, void *item);
+AIDSHDEF Aids_Result aids_priority_queue_peek(const Aids_Priority_Queue *pq, void *item);
+AIDSHDEF void aids_priority_queue_free(Aids_Priority_Queue *pq);
 
 typedef struct {
     unsigned char *str;
@@ -339,7 +352,18 @@ defer:
     return result;
 }
 
-AIDSHDEF Aids_Result aids_array_pop(const Aids_Array *da, unsigned long index, void *item) {
+AIDSHDEF boolean aids_array_contains(const Aids_Array *da, const void *item, int (*compare)(const void *, const void *)) {
+    for (unsigned long i = 0; i < da->count; i++) {
+        void *current_item = da->items + i * da->item_size;
+        if (compare(current_item, item) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+AIDSHDEF Aids_Result aids_array_pop(Aids_Array *da, unsigned long index, void *item) {
     Aids_Result result = AIDS_OK;
 
     if (index >= da->count) {
@@ -359,6 +383,32 @@ defer:
     return result;
 }
 
+AIDSHDEF Aids_Result aids_array_swap(const Aids_Array *da, unsigned long index1, unsigned long index2) {
+    Aids_Result result = AIDS_OK;
+
+    if (index1 >= da->count || index2 >= da->count) {
+        aids__g_failure_reason = aids_temp_sprintf("Index out of bounds (count: %lu)", da->count);
+        return_defer(AIDS_ERR);
+    }
+
+    if (index1 != index2) {
+        size_t save = aids_temp_save();
+        unsigned char *temp = (unsigned char *)aids_temp_alloc(da->item_size);
+        if (temp == NULL) {
+            return_defer(AIDS_ERR);
+        }
+
+        memcpy(temp, da->items + index1 * da->item_size, da->item_size);
+        memcpy(da->items + index1 * da->item_size, da->items + index2 * da->item_size, da->item_size);
+        memcpy(da->items + index2 * da->item_size, temp, da->item_size);
+
+        aids_temp_load(save);
+    }
+
+defer:
+    return result;
+}
+
 AIDSHDEF void aids_array_sort(Aids_Array *da, int (*compare)(const void *, const void *)) {
     if (da->count > 0 && da->items != NULL) {
         qsort(da->items, da->count, da->item_size, compare);
@@ -372,6 +422,141 @@ AIDSHDEF void aids_array_free(Aids_Array *da) {
     }
     da->count = 0;
     da->capacity = 0;
+}
+
+AIDSHDEF void aids_priority_queue_init(Aids_Priority_Queue *pq, unsigned long item_size, int (*compare)(const void *, const void *)) {
+    aids_array_init(&pq->items, item_size);
+    pq->compare = compare;
+}
+
+AIDSHDEF Aids_Result aids_priority_queue_insert(Aids_Priority_Queue *pq, const void *item) {
+    Aids_Result result = AIDS_OK;
+
+    if (aids_array_append(&pq->items, item) != AIDS_OK) {
+        return_defer(AIDS_ERR);
+    }
+
+    size_t index = pq->items.count - 1;
+    if (index == 0) {
+        return_defer(AIDS_OK);
+    }
+
+    size_t parent = (index - 1) / 2;
+
+    void *index_item = NULL;
+    if (aids_array_get(&pq->items, index, &index_item) != AIDS_OK) {
+        return_defer(AIDS_ERR);
+    }
+
+    void *parent_item = NULL;
+    if (aids_array_get(&pq->items, parent, &parent_item) != AIDS_OK) {
+        return_defer(AIDS_ERR);
+    }
+
+    while (index > 0 && pq->compare(index_item, parent_item) < 0) {
+        if (aids_array_swap(&pq->items, index, parent) != AIDS_OK) {
+            return_defer(AIDS_ERR);
+        }
+
+        index = parent;
+        parent = (index - 1) / 2;
+
+        if (aids_array_get(&pq->items, index, &index_item) != AIDS_OK) {
+            return_defer(AIDS_ERR);
+        }
+
+        if (aids_array_get(&pq->items, parent, &parent_item) != AIDS_OK) {
+            return_defer(AIDS_ERR);
+        }
+    }
+
+defer:
+    return result;
+}
+
+AIDSHDEF Aids_Result aids_priority_queue_pull(Aids_Priority_Queue *pq, void *item) {
+    Aids_Result result = AIDS_OK;
+
+    if (pq->items.count == 0) {
+        aids__g_failure_reason = "Priority queue is empty";
+        return_defer(AIDS_ERR);
+    }
+
+    void *top_item = NULL;
+    if (aids_array_get(&pq->items, 0, &top_item) != AIDS_OK) {
+        return_defer(AIDS_ERR);
+    }
+    memcpy(item, top_item, pq->items.item_size);
+
+    if (aids_array_swap(&pq->items, 0, pq->items.count - 1) != AIDS_OK) {
+        return_defer(AIDS_ERR);
+    }
+
+    size_t swap = 0;
+    void *swap_item = NULL;
+    if (aids_array_get(&pq->items, swap, &swap_item) != AIDS_OK) {
+        return_defer(AIDS_ERR);
+    }
+
+    size_t index = 0;
+    do {
+        index = swap;
+
+        size_t left = index * 2 + 1;
+        if (left < pq->items.count - 1) {
+            void *left_item = NULL;
+            if (aids_array_get(&pq->items, left, &left_item) != AIDS_OK) {
+                return_defer(AIDS_ERR);
+            }
+
+            if (pq->compare(left_item, swap_item) < 0) {
+                swap = left;
+                swap_item = left_item;
+            }
+        }
+
+        size_t right = index * 2 + 2;
+        if (right < pq->items.count - 1) {
+            void *right_item = NULL;
+            if (aids_array_get(&pq->items, right, &right_item) != AIDS_OK) {
+                return_defer(AIDS_ERR);
+            }
+
+            if (pq->compare(right_item, swap_item) < 0) {
+                swap = right;
+                swap_item = right_item;
+            }
+        }
+
+        if (aids_array_swap(&pq->items, index, swap) != AIDS_OK) {
+            return_defer(AIDS_ERR);
+        }
+    } while (index != swap);
+
+    pq->items.count--;
+
+defer:
+    return result;
+}
+
+AIDSHDEF Aids_Result aids_priority_queue_peek(const Aids_Priority_Queue *pq, void *item) {
+    Aids_Result result = AIDS_OK;
+
+    if (pq->items.count == 0) {
+        aids__g_failure_reason = "Priority queue is empty";
+        return_defer(AIDS_ERR);
+    }
+
+    if (aids_array_get(&pq->items, 0, item) != AIDS_OK) {
+        return_defer(AIDS_ERR);
+    }
+
+defer:
+    return result;
+}
+
+AIDSHDEF void aids_priority_queue_free(Aids_Priority_Queue *pq) {
+    aids_array_free(&pq->items);
 }
 
 AIDSHDEF void aids_string_slice_init(Aids_String_Slice *ss, const char *str, unsigned long len) {
