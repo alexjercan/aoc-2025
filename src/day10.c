@@ -4,6 +4,7 @@
 #include <string.h>
 #define AIDS_IMPLEMENTATION
 #include "aids.h"
+#include <z3.h>
 
 typedef struct {
     long *positions;
@@ -221,8 +222,110 @@ void part1(Aids_Array machines) {
     printf("PART1: %zu\n", total_presses);
 }
 
+size_t solve_with_z3(Machine machine) {
+    Z3_config cfg = Z3_mk_config();
+    Z3_context ctx = Z3_mk_context(cfg);
+
+    // Create variables for how many times each button is pressed
+    Z3_ast *button_press_vars = (Z3_ast *)malloc(machine.buttons.count * sizeof(Z3_ast));
+    for (size_t i = 0; i < machine.buttons.count; i++) {
+        char var_name[32];
+        snprintf(var_name, sizeof(var_name), "press_%zu", i);
+        button_press_vars[i] = Z3_mk_const(ctx, Z3_mk_string_symbol(ctx, var_name), Z3_mk_int_sort(ctx));
+    }
+
+    Z3_optimize opt = Z3_mk_optimize(ctx);
+
+    // Add constraint for each button press >= 0
+    for (size_t i = 0; i < machine.buttons.count; i++) {
+        Z3_ast zero = Z3_mk_numeral(ctx, "0", Z3_mk_int_sort(ctx));
+        Z3_ast ge_constraint = Z3_mk_ge(ctx, button_press_vars[i], zero);
+        Z3_optimize_assert(ctx, opt, ge_constraint);
+    }
+
+    // Add equations: for each joltage, sum of button presses that affect it must equal target
+    for (size_t jolt_idx = 0; jolt_idx < machine.jolts.count; jolt_idx++) {
+        long *target_jolt = NULL;
+        AIDS_ASSERT(aids_array_get(&machine.jolts, jolt_idx, (void **)&target_jolt) == AIDS_OK, aids_failure_reason());
+
+        // Build sum of button presses that affect this joltage
+        Z3_ast *sum_terms = (Z3_ast *)malloc(machine.buttons.count * sizeof(Z3_ast));
+        size_t term_count = 0;
+
+        for (size_t btn = 0; btn < machine.buttons.count; btn++) {
+            Button *button = NULL;
+            AIDS_ASSERT(aids_array_get(&machine.buttons, btn, (void **)&button) == AIDS_OK, aids_failure_reason());
+
+            // Check if this button affects this joltage
+            int affects_jolt = 0;
+            for (size_t j = 0; j < button->position_count; j++) {
+                if (button->positions[j] == (long)jolt_idx) {
+                    affects_jolt = 1;
+                    break;
+                }
+            }
+
+            if (affects_jolt) {
+                sum_terms[term_count++] = button_press_vars[btn];
+            }
+        }
+
+        // Create constraint: sum == target
+        char target_str[32];
+        snprintf(target_str, sizeof(target_str), "%ld", *target_jolt);
+        Z3_ast target = Z3_mk_numeral(ctx, target_str, Z3_mk_int_sort(ctx));
+
+        if (term_count > 0) {
+            Z3_ast sum = Z3_mk_add(ctx, term_count, sum_terms);
+            Z3_ast eq = Z3_mk_eq(ctx, sum, target);
+            Z3_optimize_assert(ctx, opt, eq);
+        } else if (*target_jolt != 0) {
+            // No buttons affect this joltage but target is non-zero: unsolvable
+            Z3_del_context(ctx);
+            Z3_del_config(cfg);
+            free(button_press_vars);
+            free(sum_terms);
+            return ULONG_MAX;
+        }
+
+        free(sum_terms);
+    }
+
+    // Minimize total button presses
+    Z3_ast *all_buttons = (Z3_ast *)malloc(machine.buttons.count * sizeof(Z3_ast));
+    memcpy(all_buttons, button_press_vars, machine.buttons.count * sizeof(Z3_ast));
+    Z3_ast total_presses = Z3_mk_add(ctx, machine.buttons.count, all_buttons);
+    Z3_optimize_minimize(ctx, opt, total_presses);
+
+    Z3_lbool result = Z3_optimize_check(ctx, opt, 0, NULL);
+
+    size_t solution = ULONG_MAX;
+    if (result == Z3_L_TRUE) {
+        Z3_model model = Z3_optimize_get_model(ctx, opt);
+        Z3_ast evaluated = Z3_mk_fresh_const(ctx, "result", Z3_mk_int_sort(ctx));
+        Z3_model_eval(ctx, model, total_presses, Z3_L_TRUE, &evaluated);
+        Z3_string total_str = Z3_ast_to_string(ctx, evaluated);
+        solution = (size_t)strtoll(total_str, NULL, 10);
+    }
+
+    Z3_del_context(ctx);
+    Z3_del_config(cfg);
+    free(button_press_vars);
+    free(all_buttons);
+
+    return solution;
+}
+
 void part2(Aids_Array machines) {
-    printf("PART2: TODO\n");
+    size_t total_jolts = 0;
+    for (size_t i = 0; i < machines.count; i++) {
+        Machine *machine = NULL;
+        AIDS_ASSERT(aids_array_get(&machines, i, (void **)&machine) == AIDS_OK, aids_failure_reason());
+
+        total_jolts += solve_with_z3(*machine);
+    }
+
+    printf("PART2: %zu\n", total_jolts);
 }
 
 int main() {

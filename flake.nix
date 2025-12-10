@@ -38,11 +38,11 @@
 
             src = ./.;
 
-            nativeBuildInputs = [pkgs.clang];
+            nativeBuildInputs = [pkgs.clang pkgs.z3];
 
             buildPhase = ''
               mkdir -p dist
-              clang -I. -lm src/day${dayString}.c -o dist/day${dayString}
+              clang -I. -lz3 -lm src/day${dayString}.c -o dist/day${dayString}
             '';
 
             installPhase = ''
@@ -221,6 +221,7 @@
           packages = [
             pkgs.clang
             pkgs.valgrind
+            pkgs.z3
           ];
         };
       };
