@@ -145,7 +145,7 @@
                   echo -e "$IYellow""--- Day 9: Movie Theater ---""$Color_Off"
                   ${aocPrefix}09 < ./input/day09.input
 
-                  echo -e "$IRed""--- Day 10: Laboratories ---""$Color_Off"
+                  echo -e "$IRed""--- Day 10: Factory ---""$Color_Off"
                   ${aocPrefix}10 < ./input/day10.input
                 '';
             };
